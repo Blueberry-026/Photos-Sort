@@ -77,7 +77,7 @@ def ComputeDist(PLat, PLon, CLat, CLon):
 # Selon le code recu, écrit soit l'entête du fichier GPX, soit
 # le point courant soit les lignes de fin de fichier
 #
-def FillGpx(handler, fGpx, code, gpxLat, gpxLon, gpxDat, gpxEle):
+def FillGpx(handler, fGpx, code, gpxNAM, gpxLat, gpxLon, gpxDat, gpxEle):
     if code == 'header':
         handler.write("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n")
         handler.write("<gpx version=\"1.0\">\n")
@@ -89,7 +89,7 @@ def FillGpx(handler, fGpx, code, gpxLat, gpxLon, gpxDat, gpxEle):
             handler.write("         <trkpt lat='%f' lon='%f'>\n" % (gpxLat, gpxLon))
             handler.write("            <ele>%d</ele>\n" % gpxEle)
             handler.write("            <time>%s</time>\n" % gpxDat)
-            handler.write("            <name>abc</name>\n")
+            handler.write("            <name>%s</name>\n" % gpxNAM)
             handler.write("         </trkpt>\n")
         #else:
         #    print("Position 0/0 non écrite")
@@ -116,8 +116,8 @@ gpxFullName     = "traceFULL.gpx"
 gpxKviewName    = "traceKV.gpx"
 gpxFullHandler  = open(gpxFullName , 'w')
 gpxKviewHandler = open(gpxKviewName, 'w')
-FillGpx(gpxFullHandler,  gpxFullName,  'header',0,0,"",0)
-FillGpx(gpxKviewHandler, gpxKviewName, 'header',0,0,"",0)
+FillGpx(gpxFullHandler,  gpxFullName,  'header',"",0,0,"",0)
+FillGpx(gpxKviewHandler, gpxKviewName, 'header',"",0,0,"",0)
 lstPhotos=[]
 
 for srcFile in fList:
@@ -134,7 +134,7 @@ for srcFile in fList:
         exifInfo = Image(image_file)
         dtXF = datetime.strptime(exifInfo.datetime, '%Y:%m:%d %H:%M:%S')
         if ctrPhotos == 1:
-            repJour = dtXF.strftime("%Y-%m-%d")
+            repJour = dtXF.strftime("%Y-%m-%d - %Hh%M")
         try:
             curLat = ConvertDMS_DDD(exifInfo.gps_latitude)
             curLon = ConvertDMS_DDD(exifInfo.gps_longitude)
@@ -154,9 +154,9 @@ for srcFile in fList:
                                                     int(exifInfo.gps_timestamp[0]),
                                                     int(exifInfo.gps_timestamp[1]),
                                                     int(exifInfo.gps_timestamp[2]))
-                dtGPS    = datetime.strptime(strGPS, "%Y:%m:%d %H:%M:%S")
-                offsetTM = dtGPS-dtXF
-                repJour  = dtGPS.strftime("%Y-%m-%d")
+                #dtGPS    = datetime.strptime(strGPS, "%Y:%m:%d %H:%M:%S")
+                #offsetTM = dtGPS-dtXF
+                #repJour  = dtGPS.strftime("%Y-%m-%d - %Hh%M")
                 firstPos = False
             dLat   = abs(curLat - prvLat)
             dLon   = abs(curLon - prvLon)
@@ -180,19 +180,20 @@ for srcFile in fList:
     #	dtXF = dtXF + offsetTM
     fileName = dtXF.strftime("%Y-%m-%d_%Hh%Mm%S")
     fileName = fileName + "-" + format("%4.4d" % int(exifInfo.subsec_time )) + ".jpg"
+    gpxNAM=fileName
     # Dans tous les cas, on archive dans le backup local
     #
     dstFile = dstBaseDir + "/" + repJour + "/" + fileName
-    print ("  Archive locale [%s] -> [%s]" % (srcFile, dstFile))
+    print ("  Arch: [%s] -> [%s]" % (srcFile, dstFile))
     if infosGPS:
-      FillGpx(gpxFullHandler,  gpxFullName,     'point', curLat, curLon, gpxDT,gpxELE)
+      FillGpx(gpxFullHandler,  gpxFullName,     'point', gpxNAM, curLat, curLon, gpxDT,gpxELE)
     shutil.copy(srcFile, dstFile)
     print("      -> done")
 
     # Selon analyse, on copie ou pas dans le rep d'upload KV
     #
     dstFile = krtBaseDir + "/" + repJour + "/" + fileName
-    print ("  Upload Kartaview [%s] -> [%s]" % (srcFile, dstFile))
+    print ("  Krtv: [%s] -> [%s]" % (srcFile, dstFile))
     distPT  = ComputeDist(prvLat, prvLon, curLat, curLon)
     distDOM = ComputeDist(dom_lat, dom_lon, curLat, curLon)
     if not infosGPS:
@@ -201,20 +202,20 @@ for srcFile in fList:
         ctrNoGps = ctrNoGps + 1
     elif (distPT < photo_dmin):
         boolIMM=True
-        print("     *** sautée (pas assez d'écart avec la photo précédente) %f/%f" % (dLat, dLon))
+        print("     *** sautée (pas assez d'écart avec la photo précédente) %f/%f" % (distPT,photo_dmin))
         ctrImmobile = ctrImmobile + 1
     elif (distDOM < dom_min):
         boolDOM=True
-        print("     *** sautée (trop proche du domicile) %f/%f" % ((curLat - dom_lat),(curLon - dom_lon) ) )
+        print("     *** sautée (trop proche du domicile) %f/%f" % (distDOM,dom_min))
         ctrDomicile = ctrDomicile + 1
     else:
         boolCOP=True
         shutil.copy(srcFile, dstFile)
-        print ("     -> done  | mouvement = %f/%f | domicile = %f/%f" % (dLat,dLon,abs(curLat - dom_lat),abs(curLon - dom_lon)) )
+        print ("     -> done")
         ctrCopies=ctrCopies+1
         prvLat=curLat
         prvLon=curLon
-        FillGpx(gpxKviewHandler, gpxKviewName,'point', curLat, curLon, gpxDT,gpxELE)
+        FillGpx(gpxKviewHandler, gpxKviewName,'point', gpxNAM, curLat, curLon, gpxDT,gpxELE)
 
     #os.unlink(srcFile)
     if infosGPS:
@@ -241,10 +242,10 @@ for srcFile in fList:
                     )
         lstPhotos.append(trpPhoto)
 
-print("\n\n\nTotal:%d === Copiés:%d === NoGPS:%d === Filtré immobile:%d === Filtrées domicile:%d" % (ctrPhotos,ctrCopies,ctrNoGps,ctrImmobile,ctrDomicile))
+print("\nTotal:%d === Copiés:%d === NoGPS:%d === Filtré immobile:%d === Filtrées domicile:%d" % (ctrPhotos,ctrCopies,ctrNoGps,ctrImmobile,ctrDomicile))
          
-FillGpx(gpxFullHandler,  gpxFullName,  'footer',0,0,"",0)
-FillGpx(gpxKviewHandler, gpxKviewName, 'footer',0,0,"",0)
+FillGpx(gpxFullHandler,  gpxFullName,  'footer',"",0,0,"",0)
+FillGpx(gpxKviewHandler, gpxKviewName, 'footer',"",0,0,"",0)
 
 dstFile = dstBaseDir + "/" + repJour + "/Trace-" + repJour + " (full).gpx"
 #shutil.move(gpxFullName, dstFile)
