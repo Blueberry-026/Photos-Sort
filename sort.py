@@ -4,24 +4,31 @@ from math import sin, cos, sqrt, atan2, asin, radians
 from exif import Image
 from datetime import datetime
 import shutil
+import argparse
+import sys
 
-srcBaseDir = "/media/blueb/Datas/ImagesRues/GoPro/_a trier_"
-dstBaseDir = "/media/blueb/Datas/ImagesRues/GoPro/"
+srcBaseDir = "c:/_eric_/_atrier"
+gopBaseDir = "c:/_eric_/_arch"
+krtBaseDir = "c:/_eric_/_kv"
+
+srcBaseDir = "/media/blueb/Datas/ImagesRues/_a trier_"
+gopBaseDir = "/media/blueb/Datas/ImagesRues/Archives"
 krtBaseDir = "/media/blueb/Datas/ImagesRues/Kartaview"
 
-srcBaseDir = "c:/_eric_/_img"
-dstBaseDir = "c:/_eric_/_gop"
-krtBaseDir = "c:/_eric_/_kv"
+prvLat = 0
+prvLon = 0
+curLat = 0
+curLon = 0
 
 #====== Point de départ à filtrer
 #
-dom_lat = 45.0000
-dom_lon =  4.0000
+dom_lat = 45.7442
+dom_lon =  4.8343
 dom_min = 200
 
 #====== Distance mini entre 2 photos
 #
-photo_dmin = 5
+photo_dmin = 4
 
 #====== Stats
 #
@@ -31,11 +38,11 @@ ctrImmobile	= 0		# Total de photos non copiées car immobiles
 ctrDomicile	= 0 	# Total de photos non copiées car proche domicile
 ctrNoGps	= 0 	# Total de photos non copiées car non géotaggès
 
-prvJour  = ""
-firstPos = True
-fList    = sorted(glob.glob(srcBaseDir+"/*.JPG"), key=os.path.basename)
-dstTotal   = 0
-dstPhoto     = 0
+prvJour   = ""
+firstPos  = True
+distTotal = 0
+distPhoto = 0
+distDom   = 0
 
 #==============================================================================
 # Fonction |  ComputeDist
@@ -68,7 +75,6 @@ def ComputeDist(PLat, PLon, CLat, CLon):
             print("Distance 0 !!")
     except Exception as e:
         print("   !!! ComputeDist EXCEPT [%s] " % e)
-
     return dDST
 
 # =============================================================================
@@ -91,8 +97,6 @@ def FillGpx(handler, fGpx, code, gpxNAM, gpxLat, gpxLon, gpxDat, gpxEle):
             handler.write("            <time>%s</time>\n" % gpxDat)
             handler.write("            <name>%s</name>\n" % gpxNAM)
             handler.write("         </trkpt>\n")
-        #else:
-        #    print("Position 0/0 non écrite")
     elif code == 'footer':
         handler.write("      </trkseg>\n")
         handler.write("   </trk>\n")
@@ -105,8 +109,49 @@ def FillGpx(handler, fGpx, code, gpxNAM, gpxLat, gpxLon, gpxDat, gpxEle):
 # -----------------------------------------------------------------------------
 #
 def ConvertDMS_DDD(pos):
-    dd = float(pos[0]) + float(pos[1])/60 + float(pos[2])/(60*60);
-    return dd;
+    dd = float(pos[0]) + float(pos[1])/60 + float(pos[2])/(60*60)
+    return dd
+
+# =============================================================================
+# Fonction |  ParseArgs
+# -----------------------------------------------------------------------------
+# Exemple:
+#    --repertoire "/media/blueb/Datas/ImagesRues/GoPro/_27-Boulot" --comment "toto" --domicile 200 --filtrage 5
+def ParseArgs():
+    global srcBaseDir,nameDir,photo_dmin,dom_min
+
+    parser = argparse.ArgumentParser(description="Tri de photos",
+                                     epilog="Exemple: >Python3 sort.py -r '/media/blueb/Datas/ImagesRues/_a trier_' -c 'boulot' -d 250 -f 5")
+    parser.add_argument(
+        "-r", "--repertoire",
+        type=str,
+        action="store",
+        default=srcBaseDir,
+        help="Répertoire contenant les photos à trier\n(exemple : -r '/media/blueb/Datas/ImagesRues/_a trier_'")
+    parser.add_argument(
+        "-c", "--comment",
+        type=str,
+        action="store",
+        default=nameDir,
+        help="Commentaire à ajouter au dossier\n(exemple : -c 'Fourviere')")
+    parser.add_argument(
+        "-d", "--domicile",
+        type=str,
+        action="store",
+        default=dom_min,
+        help="Distance à filtrer autour du domicle en metres\n(exemple : -d 200")
+    parser.add_argument(
+        "-f", "--filtrage",
+        type=str,
+        action="store",
+        default=photo_dmin,
+        help="Distance minimale entre 2 photos en metres\n(exemple : -f 5")
+    args = parser.parse_args()
+
+    srcBaseDir = args.repertoire
+    nameDir = args.comment
+    photo_dmin = args.filtrage
+    dom_min = args.domicile
 
 # =============================================================================
 # Main
@@ -119,11 +164,17 @@ gpxKviewHandler = open(gpxKviewName, 'w')
 FillGpx(gpxFullHandler,  gpxFullName,  'header',"",0,0,"",0)
 FillGpx(gpxKviewHandler, gpxKviewName, 'header',"",0,0,"",0)
 lstPhotos=[]
+repJour=""
+nameDir=""
+
+fList    = sorted(glob.glob(srcBaseDir+"/*.JPG"), key=os.path.basename)
+
+ParseArgs()
 
 for srcFile in fList:
     ctrPhotos=ctrPhotos+1
-    if ctrPhotos>200:
-    	break
+#    if ctrPhotos>100:
+#        break
     print("====== Fichier %d/%d) == %s == " % (ctrPhotos,len(fList),srcFile))
     boolDOM=False
     boolNGP=False
@@ -131,87 +182,104 @@ for srcFile in fList:
     boolCOP=False
   
     with open(srcFile, 'rb') as image_file:
-        exifInfo = Image(image_file)
-        dtXF = datetime.strptime(exifInfo.datetime, '%Y:%m:%d %H:%M:%S')
-        if ctrPhotos == 1:
-            repJour = dtXF.strftime("%Y-%m-%d - %Hh%M")
         try:
-            curLat = ConvertDMS_DDD(exifInfo.gps_latitude)
-            curLon = ConvertDMS_DDD(exifInfo.gps_longitude)
+            exifInfo = Image(image_file)
+            dtXF = datetime.strptime(exifInfo.datetime, '%Y:%m:%d %H:%M:%S')
+            if ctrPhotos == 1:
+                if len(nameDir) > 2:
+                    repJour = dtXF.strftime("%Y-%m-%d - %Hh%M") + " (" + nameDir + ")"
+                else:
+                    repJour = dtXF.strftime("%Y-%m-%d - %Hh%M")
+            try:
+                curLat = ConvertDMS_DDD(exifInfo.gps_latitude)
+                curLon = ConvertDMS_DDD(exifInfo.gps_longitude)
 
-            # Si pas d'info GPS (garage au début ou tunnel ...) il n'y a pas encore de GPS donc on part en exemption
-            # Sinon, recuperer lat/lon/heure ...
-            #
-            infosGPS = True
-            if firstPos:
-                prvLat = ConvertDMS_DDD(exifInfo.gps_latitude)
-                prvLon = ConvertDMS_DDD(exifInfo.gps_longitude)
-
-                # Decoder l'heure GPS de la premiere photo, calculer l'offeset avec l'heure EXIF et la rajouter
-                # ensuite à toutes les photos.
+                # Si pas d'info GPS (garage au début ou tunnel ...) il n'y a pas encore de GPS donc on part en exemption
+                # Sinon, recuperer lat/lon/heure ...
                 #
-                strGPS = "%s %2.2d:%2.2d:%2.2d" % ( exifInfo.gps_datestamp,
-                                                    int(exifInfo.gps_timestamp[0]),
-                                                    int(exifInfo.gps_timestamp[1]),
-                                                    int(exifInfo.gps_timestamp[2]))
-                #dtGPS    = datetime.strptime(strGPS, "%Y:%m:%d %H:%M:%S")
-                #offsetTM = dtGPS-dtXF
-                #repJour  = dtGPS.strftime("%Y-%m-%d - %Hh%M")
-                firstPos = False
-            dLat   = abs(curLat - prvLat)
-            dLon   = abs(curLon - prvLon)
-            gpxDT  = dtXF.strftime("%Y-%m-%dT%H:%M:%S")
-            gpxELE = exifInfo.gps_altitude
-        except:
-            infosGPS = False
+                infosGPS = True
+                if firstPos:
+                    prvLat = ConvertDMS_DDD(exifInfo.gps_latitude)
+                    prvLon = ConvertDMS_DDD(exifInfo.gps_longitude)
 
-        if repJour != prvJour:
-            try:
-                os.mkdir(dstBaseDir + "/" + repJour)
+                    # Decoder l'heure GPS de la premiere photo, calculer l'offeset avec l'heure EXIF et la rajouter
+                    # ensuite à toutes les photos.
+                    #
+                    strGPS = "%s %2.2d:%2.2d:%2.2d" % ( exifInfo.gps_datestamp,
+                                                        int(exifInfo.gps_timestamp[0]),
+                                                        int(exifInfo.gps_timestamp[1]),
+                                                        int(exifInfo.gps_timestamp[2]))
+                    #dtGPS    = datetime.strptime(strGPS, "%Y:%m:%d %H:%M:%S")
+                    #offsetTM = dtGPS-dtXF
+                    #repJour  = dtGPS.strftime("%Y-%m-%d - %Hh%M")
+                    firstPos = False
+                dLat   = abs(curLat - prvLat)
+                dLon   = abs(curLon - prvLon)
+                gpxDT  = dtXF.strftime("%Y-%m-%dT%H:%M:%S")
+                gpxELE = exifInfo.gps_altitude
             except:
-                print ("Répertoire [%s/%s] existe déjà..." % (dstBaseDir,repJour))
-            try:
-                os.mkdir(krtBaseDir + "/" + repJour)
-            except:
-                print ("Répertoire [%s/%s] existe déjà..." % (krtBaseDir,repJour))
-        prvJour=repJour
+                infosGPS = False
+
+            if repJour != prvJour:
+                try:
+                    os.mkdir(gopBaseDir + "/" + repJour)
+                except:
+                    print ("Répertoire [%s/%s] existe déjà..." % (gopBaseDir,repJour))
+                try:
+                    os.mkdir(krtBaseDir + "/" + repJour)
+                except:
+                    print ("Répertoire [%s/%s] existe déjà..." % (krtBaseDir,repJour))
+            prvJour=repJour
+        except:
+            print("EXIF except")
 
     #if not firstPos:
     #	dtXF = dtXF + offsetTM
-    fileName = dtXF.strftime("%Y-%m-%d_%Hh%Mm%S")
-    fileName = fileName + "-" + format("%4.4d" % int(exifInfo.subsec_time )) + ".jpg"
+    #fileName = dtXF.strftime("%Y-%m-%d_%Hh%Mm%S")
+    #fileName = fileName + "-" + format("%4.4d" % int(exifInfo.subsec_time )) + ".jpg"
+
+    fileName = "%s - %4.4d.jpg" % (dtXF.strftime("%Y-%m-%d_%Hh%Mm%S") , int(exifInfo.subsec_time ))
     gpxNAM=fileName
+    fileName = "%s-%4.4d.jpg" % (dtXF.strftime("%Hh%Mm%S") , int(exifInfo.subsec_time ))
     # Dans tous les cas, on archive dans le backup local
     #
-    dstFile = dstBaseDir + "/" + repJour + "/" + fileName
+    dstFile = gopBaseDir + "/" + repJour + "/" + fileName
     print ("  Arch: [%s] -> [%s]" % (srcFile, dstFile))
     if infosGPS:
       FillGpx(gpxFullHandler,  gpxFullName,     'point', gpxNAM, curLat, curLon, gpxDT,gpxELE)
-    shutil.copy(srcFile, dstFile)
-    print("      -> done")
+
+    if (os.path.isfile(dstFile)):
+        print("Fichier [%s] exist" % dstFile)
+    else:
+        shutil.copy(srcFile, dstFile)
+
+    #print("      -> done")
 
     # Selon analyse, on copie ou pas dans le rep d'upload KV
     #
     dstFile = krtBaseDir + "/" + repJour + "/" + fileName
     print ("  Krtv: [%s] -> [%s]" % (srcFile, dstFile))
-    distPT  = ComputeDist(prvLat, prvLon, curLat, curLon)
-    distDOM = ComputeDist(dom_lat, dom_lon, curLat, curLon)
+    distPhoto = ComputeDist(prvLat, prvLon, curLat, curLon)
+    distDom   = ComputeDist(dom_lat, dom_lon, curLat, curLon)
     if not infosGPS:
         boolNGP=True
         print("     *** sautée (pas d'infos GPS)")
         ctrNoGps = ctrNoGps + 1
-    elif (distPT < photo_dmin):
+    elif (distPhoto < photo_dmin):
         boolIMM=True
-        print("     *** sautée (pas assez d'écart avec la photo précédente) %f/%f" % (distPT,photo_dmin))
+        print("     *** sautée (pas assez d'écart avec la photo précédente)")
         ctrImmobile = ctrImmobile + 1
-    elif (distDOM < dom_min):
+    elif (distDom < dom_min):
         boolDOM=True
-        print("     *** sautée (trop proche du domicile) %f/%f" % (distDOM,dom_min))
+        print("     *** sautée (trop proche du domicile)")
         ctrDomicile = ctrDomicile + 1
     else:
         boolCOP=True
-        shutil.copy(srcFile, dstFile)
-        print ("     -> done")
+        if (os.path.isfile(dstFile)):
+            print ("Fichier [%s] exist" % dstFile)
+        else:
+            shutil.copy(srcFile, dstFile)
+        #print ("     -> done")
         ctrCopies=ctrCopies+1
         prvLat=curLat
         prvLon=curLon
@@ -219,7 +287,7 @@ for srcFile in fList:
 
     #os.unlink(srcFile)
     if infosGPS:
-        dstTotal += dstPhoto
+        distTotal += distPhoto
         trpPhoto =(	ctrPhotos,	\
                     srcFile,	\
                     fileName,	\
@@ -229,8 +297,8 @@ for srcFile in fList:
                     prvLon,		\
                     dLat,		\
                     dLon,		\
-                    dstPhoto,	\
-                    int(dstTotal),\
+                    distPhoto,	\
+                    int(distTotal),\
                     boolNGP,    \
                     ctrNoGps,	\
                     boolIMM,    \
@@ -243,15 +311,22 @@ for srcFile in fList:
         lstPhotos.append(trpPhoto)
 
 print("\nTotal:%d === Copiés:%d === NoGPS:%d === Filtré immobile:%d === Filtrées domicile:%d" % (ctrPhotos,ctrCopies,ctrNoGps,ctrImmobile,ctrDomicile))
-         
+
+print("\nFermeture GPX")
 FillGpx(gpxFullHandler,  gpxFullName,  'footer',"",0,0,"",0)
 FillGpx(gpxKviewHandler, gpxKviewName, 'footer',"",0,0,"",0)
+gpxKviewHandler.close()
+gpxFullHandler.close()
+print("\nFermeture GPX...ok")
 
-dstFile = dstBaseDir + "/" + repJour + "/Trace-" + repJour + " (full).gpx"
-#shutil.move(gpxFullName, dstFile)
+dstFile = gopBaseDir + "/" + repJour + "/Trace-" + repJour + " (full).gpx"
+shutil.copy(gpxFullName, dstFile)
 
 dstFile = krtBaseDir + "/" + repJour + "/Trace-" + repJour + " (kv).gpx"
-#shutil.move(gpxKviewName, dstFile)
+shutil.copy(gpxKviewName, dstFile)
+
+dstFile = gopBaseDir + "/" + repJour + "/Analyse-" + repJour + ".csv"
+shutil.copy("analyse.csv", dstFile)
 
 with open('analyse.csv', 'w') as f:
     pt = (  "ctrPhotos; \
@@ -263,8 +338,8 @@ with open('analyse.csv', 'w') as f:
             prvLon; \
             dLat; \
             dLon; \
-            dist; \
-            dstTotal; \
+            distPhoto; \
+            distTotal; \
             boolNGP; \
             ctrNGP; \
             boolIMM; \
@@ -273,32 +348,33 @@ with open('analyse.csv', 'w') as f:
             ctrDOM; \
             boolCOP; \
             ctrCOP")
-    print(pt)
+    #print(pt)
     print(pt, file=f)
     for i in range(0,len(lstPhotos)):
         pt = (  "%d;%s;%s;\
                 %7.5f;%7.5f;%7.5f;%7.5f;%7.5f;%7.5f;\
                 %6.5f; %d; \
-                %d;%d;%d;%d;%d;%d;%d;%d"	% \
-          (         lstPhotos[i][0],	\
-                    lstPhotos[i][1],	\
-                    lstPhotos[i][2],	\
-                    lstPhotos[i][3],	\
-                    lstPhotos[i][4],	\
-                    lstPhotos[i][5],	\
-                    lstPhotos[i][6],	\
-                    lstPhotos[i][7],	\
-                    lstPhotos[i][8],	\
-                    lstPhotos[i][9],	\
-                    lstPhotos[i][10],	\
-                    lstPhotos[i][11],	\
-                    lstPhotos[i][12],	\
-                    lstPhotos[i][13],	\
-                    lstPhotos[i][14],	\
-                    lstPhotos[i][15],	\
-                    lstPhotos[i][16],	\
-                    lstPhotos[i][17],	\
-                    lstPhotos[i][18],	\
+                %d;%d;%d;%d;%d;%d;%d;%d" % ( \
+                    lstPhotos[i][0],	# ctrPhotos \
+                    lstPhotos[i][1],	# srcFile   \
+                    lstPhotos[i][2],	# fileName  \
+                    lstPhotos[i][3],	# curLat    \
+                    lstPhotos[i][4],	# curLon    \
+                    lstPhotos[i][5],	# prvLat    \
+                    lstPhotos[i][6],	# prvLon    \
+                    lstPhotos[i][7],	# dLat      \
+                    lstPhotos[i][8],	# dLon      \
+                    lstPhotos[i][9],	# dist      \
+                    lstPhotos[i][10],	# dstTotal  \
+                    lstPhotos[i][11],	# boolNGP   \
+                    lstPhotos[i][12],	# ctrNGP    \
+                    lstPhotos[i][13],	# boolIMM   \
+                    lstPhotos[i][14],	# ctrIMM    \
+                    lstPhotos[i][15],	# boolDOM   \
+                    lstPhotos[i][16],	# ctrDOM    \
+                    lstPhotos[i][17],	# boolCOP   \
+                    lstPhotos[i][18],	# ctrCOP    \
                     ))
-        print(pt)
+        #print(pt)
         print(pt, file=f)
+f.close()
