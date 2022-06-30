@@ -1,4 +1,4 @@
-# GoProSort
+# Photos-Sort
 
 Permet d'archiver un lot de photos et de preparer un upload vers KartaView, Mappilary ...
 
