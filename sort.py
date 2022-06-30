@@ -22,8 +22,8 @@ curLon = 0
 
 #====== Point de départ à filtrer
 #
-dom_lat = 45.7442
-dom_lon =  4.8343
+dom_lat = 45.0000
+dom_lon =  4.0000
 dom_min = 200
 
 #====== Distance mini entre 2 photos
