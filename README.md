@@ -1,18 +1,21 @@
 # Photos-Sort
 
 Photos-Sort permet de trier / archiver un lot de photos et de préparer un upload vers 
-[KartaView](https://kartaview.org], [Mappilary][https://www.mapillary.com/] ou autres ...
+[KartaView](https://kartaview.org), [Mappilary](https://www.mapillary.com) ou autres ...
 A partir d'un répertoire de photos en vrac :
 * copie toutes les photos en les renommant au format `HHhMNmSS-FFFF.jpg` dans un répertoire 
 d'archive `/AAAA-MM-JJ - HHhMN/` (l'heure contenue dans le nom du répertoire et l'heure de la première photo du lot)
-* copie les photos en les renommant au format `HHhMNmSS-FFFF.jpg` dans le répertoire d'upload limité au photos qui : 
-sont à plus de X mètres de la dernière photosont à plus de X mètres du domicile
-** contiennent un EXIF correct
-** ont recu une géoloc GPS correcte
-Ce répertoire pourra ensuite etre uploadé avec [KartaView upload][https://github.com/kartaview/upload-scripts]
+* copie les photos en les renommant au format `HHhMNmSS-FFFF.jpg` dans le répertoire d'upload limité au photos qui :
+  - contiennent un EXIF correct
+  - ont recu une géoloc GPS correcte
+  - sont à plus de X mètres de la dernière photo
+  - sont à plus de X mètres du domicile
+Ce répertoire pourra ensuite etre uploadé avec [KartaView upload](https://github.com/kartaview/upload-scripts)
 
-Le programme génère aussi* un GPX de la trace complète (format "FULL-AAAA-MM-JJ - HHhMN (commentaire).gpx") et de la trace filtrée (format `FILTERED-AAAA-MM-JJ - HHhMN 
-(commentaire).gpx`)* un rapport d'analyse (`Analyse-AAAA-MM-JJ - HHhMN (commentaire).csv`)
+Le programme génère aussi
+* un GPX de la trace complète (format `FULL-AAAA-MM-JJ - HHhMN (commentaire).gpx`)
+* un GPX de la trace filtrée (format `FILTERED-AAAA-MM-JJ - HHhMN (commentaire).gpx`)
+* un rapport d'analyse (`Analyse-AAAA-MM-JJ - HHhMN (commentaire).csv`)
 
 ```
 usage: sort.py [-h] [-r REPERTOIRE] [-c COMMENT] [-d DOMICILE] [-f FILTRAGE] [-nu NOUPLOAD] [-na NOARCHIVE] [-nx NOGPX]
