@@ -10,6 +10,7 @@ d'archive `/AAAA-MM-JJ - HHhMN/` (l'heure contenue dans le nom du répertoire es
   - ont recu une géoloc GPS correcte
   - sont à plus de X mètres de la dernière photo
   - sont à plus de Y mètres du domicile
+  
 Ce répertoire pourra ensuite etre uploadé avec [KartaView upload](https://github.com/kartaview/upload-scripts)
 
 Le programme génère aussi
