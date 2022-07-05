@@ -41,11 +41,11 @@ prvLon = 0
 curLat = 0
 curLon = 0
 
-#====== Point de départ (domicile) à filtrer
+#====== Point de départ (domicile) à filtrer et rayon de filtrage
 #
 dom_lat = 45.0000
 dom_lon =  4.0000
-dom_min = 200
+dom_min = 500
 
 #====== Distance mini entre 2 photos
 #
@@ -159,17 +159,17 @@ def ParseArgs():
                         "définis ARCHIVE et UPLOAD.\n" +
                         "Dans le répertoire UPLOAD, les images trop proches du domicile "+
                         "ou trop proche d'une photo précédente sont filtrées.",
-        epilog="Exemple: >Python3 sort.py -r '<racine>/_a trier_' -c 'Fourviere' -d 250 -f 5")
+        epilog="Exemple: >python sort.py -r '/home/a/b/c/repertoire' -c 'comment' -d 250 -f 5")
     parser.add_argument( "-r", "--repertoire",
         type=str,
         action="store",
         default=pathVidage,
-        help="Répertoire contenant les photos à trier (exemple: -r '/media/blueb/Datas/ImagesRues/_a trier_')")
+        help="Répertoire contenant les photos à trier (exemple: -r '/home/a/b/c/repertoire')")
     parser.add_argument( "-c", "--comment",
         type=str,
         action="store",
         default=trcName,
-        help="Commentaire à ajouter au dossier  (exemple: -c 'Fourviere')")
+        help="Commentaire à ajouter au dossier  (exemple: -c 'Sortie vélo')")
     parser.add_argument( "-d", "--domicile",
         type=int,
         action="store",
@@ -206,9 +206,9 @@ def ParseArgs():
     print("Commentaire à associer..................%s"  % trcName   )
     print("Distance minimale entre 2 photos........%sm" % photo_dmin)
     print("Zone de filtrage autour du domicile.....%sm" % dom_min   )
-    print("Flag pour ne pas copier dans UPLOAD.....%d"  % noUpload  )
-    print("Flag pour ne pas copier dans ARCHIVE....%d"  % noArchive )
-    print("Flag pour ne pas générer les GPX........%d"  % noGpx     )
+    print(f"Flag pour ne pas copier dans UPLOAD.....{ 'True' if noUpload  == True else 'False'}")
+    print(f"Flag pour ne pas générer les GPX........{ 'True' if noGpx     == True else 'False'}")
+    print(f"Flag pour ne pas copier dans ARCHIVE....{ 'True' if noArchive == True else 'False'}")
 
 # =============================================================================
 # Main
@@ -344,15 +344,16 @@ for srcFile in fList:
                     prvLon=curLon
                     FillGpx(gpxFilteredHandler, gpxFilteredName,'point', gpxNAM, curLat, curLon, gpxDT,gpxELE)
 
-            #os.unlink(srcFile)
             if infosGPS:
                 distTotal += distPhoto
                 infoPhoto =(	ctrPhotos,	srcFile, fileName,	\
-                            curLat,		curLon,  prvLat,	prvLon,  dLat, dLon, distPhoto,	\
-                            int(distTotal),\
-                            boolNGP,    ctrNoGps,	boolIMM,   ctrImmobile, boolDOM,    \
-                            ctrDomicile,boolCOP,    ctrCopies, ctrNoExif )
+                                curLat,		curLon,  prvLat,	prvLon,  dLat, dLon, distPhoto,	\
+                                int(distTotal),\
+                                boolNGP,    ctrNoGps,	boolIMM,   ctrImmobile, boolDOM,    \
+                                ctrDomicile,boolCOP,    ctrCopies, ctrNoExif )
                 trcPhotos.append(infoPhoto)
+            # Suppression ou pas du fichier traité
+            # os.unlink(srcFile)
         except:
             print("EXIF except")
             ctrNoExif += 1
