@@ -19,29 +19,26 @@ Le programme génère aussi
 * un rapport d'analyse (`Analyse-AAAA-MM-JJ - HHhMN (commentaire).csv`)
 
 ```
-usage: sort.py [-h] [-r REPERTOIRE] [-c COMMENT] [-d DOMICILE] [-f FILTRAGE] [-nu NOUPLOAD] [-na NOARCHIVE] [-nx NOGPX]
+usage: sort.py [-h] [-r REPERTOIRE] [-c COMMENT] [-d DOMICILE] [-f FILTRAGE] [-nu] [-na] [-nx]
 
-SORT.PY == Utilitaire de tri de photos : renome les photos au format 'HHhMNmSS-FFFF.jpg' et les range dans les 
-répertoires ARCHIVE et UPLOAD. Dans le répertoire UPLOAD, les images trop proches du domicile ou trop proche 
-de la dernière photo envoyée sont filtrées.
+SORT.PY == Utilitaire de tri de photos : renomme les photos au format
+'HHhMNmSS-FFFF.jpg' et les range dans les répertoires définis ARCHIVE et
+UPLOAD. Dans le répertoire UPLOAD, les images trop proches du domicile ou trop
+proche d'une photo précédente sont filtrées.
 
-options:
+optional arguments:
   -h, --help            show this help message and exit
-  -r, --repertoire "/x/y/z"
-                        Répertoire contenant les photos à trier (exemple: -r '/media/blueb/Datas/ImagesRues/_a trier_')
-  -c, --comment "comment"
-                        Commentaire à ajouter au dossier (exemple: -c 'Fourviere')
-  -d, --domicile <metres>
+  -r REPERTOIRE, --repertoire REPERTOIRE
+                        Répertoire contenant les photos à trier (exemple: -r '/home/xxx/repertoire')
+  -c COMMENT, --comment COMMENT
+                        Commentaire à ajouter au dossier (exemple: -c 'Sortie vélo')
+  -d DOMICILE, --domicile DOMICILE
                         Distance à filtrer autour du domicle en metres (exemple: -d 200)
-  -f, --filtrage <metres>
-                        Distance minimale entre 2 photos en metres (exemple: -f 5)
-  -nu, --noupload
-                        Ne copie pas les fichiers dans le repertoire UPLOAD (exemple: -nu)
-  -na, --noarchive
-                        Ne copie pas les fichiers dans le repertoire ARCHIVE (exemple: -na)
-  -nx, --nogpx
-                        Ne genere pas le fichier GPX (exemple: -nx)
+  -f FILTRAGE, --filtrage FILTRAGE
+                        Distance minimale entre 2 photos en mètres (exemple: -f 5)
+  -nu, --noupload       Ne copie pas les fichiers dans le répertoire UPLOAD (exemple: -nu)
+  -na, --noarchive      Ne copie pas les fichiers dans le répertoire ARCHIVE (exemple: -na)
+  -nx, --nogpx          Ne génère pas le fichier GPX (exemple: -nx)
 
-Exemple: >Python3 sort.py -r '/media/blueb/Datas/ImagesRues/_a trier_' -c 'Fourviere' -d 250 -f 5 -nu
-
+Exemple: >python sort.py -r '/home/xxx/repertoire' -c 'comment' -d 250 -f 5
 ```
