@@ -5,7 +5,7 @@ Photos-Sort permet de trier / archiver un lot de photos en vrac et de préparer 
 A partir d'un répertoire de photos en vrac :
 * copie toutes les photos en les renommant au format `HHhMNmSS-FFFF.jpg` dans un répertoire 
 d'archive `/AAAA-MM-JJ - HHhMN/` (l'heure contenue dans le nom du répertoire est l'heure de la première photo du lot)
-* copie les photos en les renommant au format `HHhMNmSS-FFFF.jpg` dans le répertoire d'upload limité au photos qui :
+* copie les photos en les renommant au format `HHhMNmSS-FFFF.jpg` dans le répertoire d'upload limité aux photos qui :
   - contiennent un EXIF correct
   - ont recu une géoloc GPS correcte
   - sont à plus de X mètres de la dernière photo
