@@ -8,6 +8,8 @@
 # | VERS  | DATE       | EVOLUTIONS
 # |-------+------------+-------------------------------------------------------
 # |       |            |
+# | v0.3x | 05/07/2022 | - Suppresion du package KEYBOARD qui pose soucis
+# |       |            |
 # | v0.2x | 05/07/2022 | - Nettoyage de code
 # |       |            | - Arguments ajoutés pour generer ou pas les rep UP/BK
 # |       |            | * Robustesse si EXIF cassé
@@ -26,15 +28,14 @@ from exif import Image
 from datetime import datetime
 import shutil
 import argparse
-import keyboard
+
+pathVidage = "c:/_eric_/0 - Vidage"
+pathArchives = "c:/_eric_/1 - Archives"
+pathUpload = "c:/_eric_/2 - Upload"
 
 pathVidage   = "/media/blueb/Datas/ImagesRues/0 - Vidage"
 pathArchives = "/media/blueb/Datas/ImagesRues/1 - Archives"
 pathUpload   = "/media/blueb/Datas/ImagesRues/2 - Upload"
-
-pathVidage   = "c:/_eric_/0 - Vidage"
-pathArchives = "c:/_eric_/1 - Archives"
-pathUpload   = "c:/_eric_/2 - Upload"
 
 prvLat = 0
 prvLon = 0
@@ -226,9 +227,9 @@ if not noGpx:
 fList = sorted(glob.glob(pathVidage+"/*.*"), key=os.path.basename)
 
 for srcFile in fList:
-    if keyboard.is_pressed('Esc'):
-        print("*** Abort / ESC pressed ***")
-        break
+    #if keyboard.is_pressed('Esc'):
+    #    print("*** Abort / ESC pressed ***")
+    #    break
     if ((os.path.splitext(srcFile)[1]).upper())!=".JPG":
         print ("Fichier [%s] ignoré" % srcFile)
         continue
