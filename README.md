@@ -1,7 +1,6 @@
 # Photos-Sort
 
-Photos-Sort permet de trier / archiver un lot de photos en vrac et de préparer un upload vers 
-[KartaView](https://kartaview.org), [Mappilary](https://www.mapillary.com) ou autres ...
+Photos-Sort permet de trier / archiver un lot de photos en vrac et de préparer un upload vers [Panoramax](https://panoramax.openstreetmap.fr/#focus=map&map=10/45.7666/4.836), [KartaView](https://kartaview.org), [Mappilary](https://www.mapillary.com) ou autres ...
 A partir d'un répertoire de photos en vrac :
 * copie toutes les photos en les renommant au format `HHhMNmSS-FFFF.jpg` dans un répertoire 
 d'archive `/AAAA-MM-JJ - HHhMN/` (l'heure contenue dans le nom du répertoire est l'heure de la première photo du lot)
@@ -11,7 +10,7 @@ d'archive `/AAAA-MM-JJ - HHhMN/` (l'heure contenue dans le nom du répertoire es
   - sont à plus de X mètres de la dernière photo
   - sont à plus de Y mètres du domicile
   
-Ce répertoire pourra ensuite etre uploadé avec [KartaView upload](https://github.com/kartaview/upload-scripts)
+Ce répertoire pourra ensuite etre uploadé avec [KartaView upload](https://github.com/kartaview/upload-scripts) ou [Panorama CLI Upload](https://gitlab.com/geovisio/cli)
 
 Le programme génère aussi
 * un GPX de la trace complète (nommé `FULL-AAAA-MM-JJ - HHhMN (commentaire).gpx`)
