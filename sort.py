@@ -8,6 +8,8 @@
 # | VERS  | DATE       | EVOLUTIONS
 # |-------+------------+-------------------------------------------------------
 # |       |            |
+# | v0.4x | 02/06/2023 | - Logs ammeliorés
+# |       |            |
 # | v0.3x | 05/07/2022 | - Suppresion du package KEYBOARD qui pose soucis
 # |       |            |
 # | v0.2x | 05/07/2022 | - Nettoyage de code
@@ -19,7 +21,7 @@
 # |       |            |
 # \----------------------------------------------------------------------------
 #
-_version = 0.21
+_version = 0.41
 
 import glob
 import os
@@ -33,9 +35,9 @@ pathVidage = "c:/_eric_/0 - Vidage"
 pathArchives = "c:/_eric_/1 - Archives"
 pathUpload = "c:/_eric_/2 - Upload"
 
-pathVidage   = "/media/blueb/Datas/ImagesRues/0 - Vidage"
-pathArchives = "/media/blueb/Datas/ImagesRues/1 - Archives"
-pathUpload   = "/media/blueb/Datas/ImagesRues/2 - Upload"
+pathVidage   = "/mnt/Datas/ImagesRues/0 - Vidage"
+pathArchives = "/mnt/Datas/ImagesRues/1 - Archives"
+pathUpload   = "/mnt/Datas/ImagesRues/2 - Upload"
 
 prvLat = 0
 prvLon = 0
@@ -44,8 +46,8 @@ curLon = 0
 
 #====== Point de départ (domicile) à filtrer et rayon de filtrage
 #
-dom_lat = 45.0000
-dom_lon =  4.0000
+dom_lat = 45.7442
+dom_lon =  4.8343
 dom_min = 500
 
 #====== Distance mini entre 2 photos
@@ -59,7 +61,8 @@ ctrCopies	= 0 	# Total de photos bonnes donc copiées pour upload Kartview
 ctrImmobile	= 0		# Total de photos non copiées car immobiles
 ctrDomicile	= 0 	# Total de photos non copiées car proche domicile
 ctrNoGps	= 0 	# Total de photos non copiées car non géotaggès
-ctrNoExif	= 0 	# Total de photos non copiées car non géotaggès
+ctrNoExif	= 0 	# Total de photos non copiées car absence EXIF
+ctrExists   = 0 	# Total de photos sautées car existantes
 
 prvJour   = ""
 firstPos  = True
@@ -236,7 +239,7 @@ for srcFile in fList:
     ctrPhotos += 1
 #    if ctrPhotos>100:
 #        break
-    print("====== Fichier %d/%d) == %s == Version %4.2f ==" % (ctrPhotos,len(fList),srcFile,_version))
+    print("====== Fichier %d/%d) == %s == v%4.2f =" % (ctrPhotos,len(fList),srcFile,_version))
     boolDOM=False
     boolNGP=False
     boolIMM=False
@@ -246,6 +249,11 @@ for srcFile in fList:
         try:
             exifInfo = Image(image_file)
             dtXF = datetime.strptime(exifInfo.datetime, '%Y:%m:%d %H:%M:%S')
+
+            #GPname = pathVidage+"/" + exifInfo.image_description[14:]
+            #shutil.copy(srcFile,GPname)
+            #continue
+
             if ctrPhotos == 1:
                 if len(trcName) > 2:
                     trcJour = dtXF.strftime("%Y-%m-%d - %Hh%M") + " (" + trcName + ")"
@@ -305,12 +313,13 @@ for srcFile in fList:
             #
             if not noArchive:
                 dstFile = pathArchives + "/" + trcJour + "/" + fileName
-                print ("  Arch: [%s] -> [%s]" % (srcFile, dstFile))
+                print ("  Arch: -> [%s]" % (dstFile))
                 if infosGPS:
                     FillGpx(gpxFullHandler,  gpxFullName,     'point', gpxNAM, curLat, curLon, gpxDT,gpxELE)
 
                 if (os.path.isfile(dstFile)):
                     print("Fichier [%s] exist" % dstFile)
+                    ctrExists += 1
                 else:
                     shutil.copy(srcFile, dstFile)
 
@@ -318,7 +327,7 @@ for srcFile in fList:
             #
             if not noUpload:
                 dstFile = pathUpload + "/" + trcJour + "/" + fileName
-                print ("  Upld: [%s] -> [%s]" % (srcFile, dstFile))
+                print ("  Upld: -> [%s]" % (dstFile))
                 distPhoto = ComputeDist(prvLat, prvLon, curLat, curLon)
                 distDom   = ComputeDist(dom_lat, dom_lon, curLat, curLon)
                 if not infosGPS:
@@ -353,13 +362,21 @@ for srcFile in fList:
                                 boolNGP,    ctrNoGps,	boolIMM,   ctrImmobile, boolDOM,    \
                                 ctrDomicile,boolCOP,    ctrCopies, ctrNoExif )
                 trcPhotos.append(infoPhoto)
+            else:
+                infoPhoto = (   ctrPhotos, srcFile, fileName, \
+                                 -1, -1, prvLat, prvLon, -1, -1, -1, \
+                                 int(distTotal), \
+                                 boolNGP, ctrNoGps, boolIMM, ctrImmobile, boolDOM, \
+                                 ctrDomicile, boolCOP, ctrCopies, ctrNoExif)
+                trcPhotos.append(infoPhoto)
             # Suppression ou pas du fichier traité
             # os.unlink(srcFile)
+            print("       Tot [%d] - Copiés [%d] - NoGPS [%d] - Immob [%d] - Dom [%d] - Exist [%d]" % (ctrPhotos, ctrCopies, ctrNoGps, ctrImmobile, ctrDomicile, ctrExists))
         except:
             print("EXIF except")
             ctrNoExif += 1
 
-print("\nTotal:%d === Copiés:%d === NoGPS:%d === Filtré immobile:%d === Filtrées domicile:%d" % (ctrPhotos,ctrCopies,ctrNoGps,ctrImmobile,ctrDomicile))
+print("\n\nFIN:%d === Copiés:%d === NoGPS:%d === Filtré immobile:%d === Filtrées domicile:%d === Fichier existe:%d" % (ctrPhotos,ctrCopies,ctrNoGps,ctrImmobile,ctrDomicile,ctrExists))
 
 if not noGpx:
     # Fermeture des GPX et copie des 2 fichiers dans le repertoire ARCHIVE
@@ -379,9 +396,9 @@ if not noGpx:
 with open(pathVidage + "/analyse.csv", 'w') as f:
     pt = ( "ctrPhotos;srcFile;fileName;curLat;  \
             curLon;prvLat;prvLon;dLat;          \
-            dLon;distPhoto;distTotal;boolNGP;   \
-            ctrNGP;boolIMM;ctrIMM;boolDOM;      \
-            ctrDOM;boolCOP;ctrCOP;ctrNXF"  )
+            dLon;distPhoto;distTotal;boolNoGPS;   \
+            ctrNoGPS;boolImmo;ctrImmo;boolDom;      \
+            ctrDom;boolCopier;ctrCopier;ctrNXF"  )
     print(pt, file=f)
     for i in range(0,len(trcPhotos)):
         print(str(trcPhotos[i]).replace(",",";").strip("[ (')]"), file=f)
